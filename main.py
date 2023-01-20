@@ -2,11 +2,12 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from dotenv import load_dotenv
 from collections import Counter
+import datetime
 
 load_dotenv()
 
-scope = 'user-top-read'
-sp = spotipy.Spotify(auth_manager=SpotifyOAuth(scope=scope))
+scopes = ['user-top-read','user-read-private', 'playlist-modify-public', 'playlist-modify-private'] 
+sp = spotipy.Spotify(auth_manager=SpotifyOAuth(scope=scopes))
 
 def get_term(range):
     if range == 1:
@@ -19,9 +20,26 @@ def get_term(range):
 
 def print_results(op, term):
     if op == 1:
+        songs = []
         results = sp.current_user_top_tracks(time_range=term)
         for idx, item in enumerate(results['items']):
             print(idx, item['name'], [a['name'] for a in item['artists']])
+            songs.append(item['uri'])
+
+        ch = int(input('''Do you want to create a playlist?
+        1) Yes
+        2) No\n'''))
+
+        if ch == 1:
+            results = sp.current_user()
+            user_id = results['id']
+            date = datetime.datetime.now()
+            new_playlist = sp.user_playlist_create(user_id,'Top Tracks {} {}'.format(date, term), public=False)
+
+            sp.playlist_add_items(new_playlist['id'], songs)
+
+            print('Playlist created successfully')
+
 
     elif op == 2:
         results = sp.current_user_top_artists(time_range=term)
